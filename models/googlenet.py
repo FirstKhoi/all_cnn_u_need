@@ -41,20 +41,71 @@ import torch
 import torch.nn as nn
 
 
+def conv_bn_relu(in_ch, out_ch, kernel_size, padding=0):
+    return nn.Sequential(
+        nn.Conv2d(in_ch, out_ch, kernel_size, padding=padding, bias=False),  # BN already adds a bias
+        nn.BatchNorm2d(out_ch),
+        nn.ReLU(inplace=True),
+    )
+
+
 class Inception(nn.Module):
     def __init__(self, in_ch, c1, c3_reduce, c3, c5_reduce, c5, pool_proj):
         super().__init__()
-        
-        raise NotImplementedError("TODO: 4 nhánh")
+        # 4 parallel branches; each keeps H x W so outputs can be concatenated on channels
+        self.branch1 = conv_bn_relu(in_ch, c1, 1)
+        self.branch2 = nn.Sequential(
+            conv_bn_relu(in_ch, c3_reduce, 1),           # 1x1 bottleneck: cut channels first
+            conv_bn_relu(c3_reduce, c3, 3, padding=1),
+        )
+        self.branch3 = nn.Sequential(
+            conv_bn_relu(in_ch, c5_reduce, 1),           # 1x1 bottleneck
+            conv_bn_relu(c5_reduce, c5, 5, padding=2),
+        )
+        self.branch4 = nn.Sequential(
+            nn.MaxPool2d(3, stride=1, padding=1),
+            conv_bn_relu(in_ch, pool_proj, 1),
+        )
 
     def forward(self, x):
-        raise NotImplementedError("TODO: torch.cat([...], dim=1)")
+        # out channels = c1 + c3 + c5 + pool_proj
+        return torch.cat([self.branch1(x), self.branch2(x), self.branch3(x), self.branch4(x)], dim=1)
 
 
 class GoogLeNet(nn.Module):
     def __init__(self, num_classes=10):
         super().__init__()
-        raise NotImplementedError("TODO")
+        self.stem = conv_bn_relu(3, 192, 3, padding=1)        # (3, 32, 32) -> (192, 32, 32)
+
+        self.block3 = nn.Sequential(
+            Inception(192, 64, 96, 128, 16, 32, 32),          # 3a -> (256, 32, 32)
+            Inception(256, 128, 128, 192, 32, 96, 64),        # 3b -> (480, 32, 32)
+            nn.MaxPool2d(3, stride=2, padding=1),             # -> (480, 16, 16)
+        )
+        self.block4 = nn.Sequential(
+            Inception(480, 192, 96, 208, 16, 48, 64),         # 4a -> (512, 16, 16)
+            Inception(512, 160, 112, 224, 24, 64, 64),        # 4b -> (512, 16, 16)
+            Inception(512, 128, 128, 256, 24, 64, 64),        # 4c -> (512, 16, 16)
+            Inception(512, 112, 144, 288, 32, 64, 64),        # 4d -> (528, 16, 16)
+            Inception(528, 256, 160, 320, 32, 128, 128),      # 4e -> (832, 16, 16)
+            nn.MaxPool2d(3, stride=2, padding=1),             # -> (832, 8, 8)
+        )
+        self.block5 = nn.Sequential(
+            Inception(832, 256, 160, 320, 32, 128, 128),      # 5a -> (832, 8, 8)
+            Inception(832, 384, 192, 384, 48, 128, 128),      # 5b -> (1024, 8, 8)
+        )
+        self.gap = nn.AdaptiveAvgPool2d(1)                    # global average pool -> (1024, 1, 1)
+        self.outputs = nn.Sequential(
+            nn.Dropout(0.4),
+            nn.Linear(1024, num_classes),
+        )
 
     def forward(self, x):
-        raise NotImplementedError("TODO")
+        x = self.stem(x)
+        x = self.block3(x)
+        x = self.block4(x)
+        x = self.block5(x)
+        x = self.gap(x)
+        x = torch.flatten(x, start_dim=1)                     # (1024, 1, 1) -> 1024
+        x = self.outputs(x)
+        return x
