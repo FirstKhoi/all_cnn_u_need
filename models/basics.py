@@ -51,7 +51,6 @@ def conv2d_naive(x, w, b=None, stride=1, padding=0):
         out += b.view(1, -1, 1, 1)
         
     return out
-    raise NotImplementedError("TODO")
 
 
 def maxpool2d_naive(x, k=2, stride=2):
@@ -72,8 +71,6 @@ def maxpool2d_naive(x, k=2, stride=2):
             
             out[:, :, i, j] = patch.amax(dim=(2, 3))
     return out
-    raise NotImplementedError("TODO")
-
 
 class SimpleCNN(nn.Module):
     """Baseline nhỏ nhất, dùng nn.Conv2d thật.
@@ -98,7 +95,6 @@ class SimpleCNN(nn.Module):
             nn.MaxPool2d(2, 2)
         )
         self.outputs = nn.Linear(64 * 8 * 8, num_classes)
-        raise NotImplementedError("TODO")
 
     def forward(self, x):
         x = self.block1(x)
@@ -108,4 +104,3 @@ class SimpleCNN(nn.Module):
         
         x = self.outputs(x)
         return x
-        raise NotImplementedError("TODO")
