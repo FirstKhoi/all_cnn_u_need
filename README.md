@@ -47,3 +47,9 @@ python visualize.py features lenet --idx 3
 Thí nghiệm biến thể (bỏ dropout, đổi activation...): sửa code tạm thời, rồi train với `--tag <tên>` để không đè lên run cũ.
 
 Mốc tham khảo trên CIFAR-10 (train từ đầu, khoảng 30 epoch, sai số vài %): LeNet ~65%, AlexNet-CIFAR ~80%, VGG16-BN ~92%, GoogLeNet ~93%, ResNet18 ~94%, MobileNet ~90%.
+
+## Train trên Google Colab
+
+Mở [`colab.ipynb` trên Colab](https://colab.research.google.com/github/FirstKhoi/all_cnn_u_need/blob/main/colab.ipynb) (repo private thì Colab hỏi quyền GitHub → tick *Include private repos*). Notebook clone repo, train toàn bộ model với `--amp`, lưu kết quả vào Google Drive `MyDrive/all_cnn_u_need/runs/`. Bị ngắt kết nối thì chạy lại: model đã train xong tự bỏ qua.
+
+Xem kết quả trên Mac: tải thư mục `runs/` trên Drive về, hoặc chạy thẳng `RUNS_DIR=<đường dẫn Drive> python visualize.py compare`.

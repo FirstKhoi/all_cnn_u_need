@@ -10,6 +10,7 @@
 """
 import argparse
 import json
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -20,7 +21,7 @@ from torchvision.utils import make_grid
 from data import CLASSES, MEAN, STD, test_set
 from models import MODELS
 
-RUNS = Path("runs")
+RUNS = Path(os.environ.get("RUNS_DIR", "runs"))
 
 
 def save(fig, name):
