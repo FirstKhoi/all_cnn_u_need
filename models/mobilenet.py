@@ -27,6 +27,7 @@ Thí nghiệm:
   - Thử width=0.5 (--tag mobilenet_w05): mất bao nhiêu accuracy?
 Mở rộng: MobileNetV2 = inverted residual + linear bottleneck (block của nó dẫn tới ConvNeXt).
 """
+import torch
 import torch.nn as nn
 
 CFG = [(64, 1), (128, 2), (128, 1), (256, 2), (256, 1), (512, 2),
@@ -36,16 +37,43 @@ CFG = [(64, 1), (128, 2), (128, 1), (256, 2), (256, 1), (512, 2),
 class DepthwiseSeparable(nn.Module):
     def __init__(self, in_ch, out_ch, stride=1):
         super().__init__()
-        raise NotImplementedError("TODO")
+        self.depthwise = nn.Sequential(                                      # 1 filter per channel, no mixing
+            nn.Conv2d(in_ch, in_ch, 3, stride=stride, padding=1, groups=in_ch, bias=False),
+            nn.BatchNorm2d(in_ch),
+            nn.ReLU(inplace=True),
+        )
+        self.pointwise = nn.Sequential(                                      # 1x1 conv mixes channels
+            nn.Conv2d(in_ch, out_ch, 1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+        )
 
     def forward(self, x):
-        raise NotImplementedError("TODO")
+        return self.pointwise(self.depthwise(x))
 
 
 class MobileNet(nn.Module):
     def __init__(self, num_classes=10, width=1.0):
         super().__init__()
-        raise NotImplementedError("TODO: nhân mọi số channel với width")
+        in_ch = int(32 * width)                                              # width multiplier α scales every layer
+        self.stem = nn.Sequential(
+            nn.Conv2d(3, in_ch, 3, padding=1, bias=False),                   # (3, 32, 32) -> (32, 32, 32)
+            nn.BatchNorm2d(in_ch),
+            nn.ReLU(inplace=True),
+        )
+        layers = []
+        for out_ch, stride in CFG:                                           # 32 -> 16 -> 8 -> 4 -> 2
+            out_ch = int(out_ch * width)
+            layers.append(DepthwiseSeparable(in_ch, out_ch, stride))
+            in_ch = out_ch
+        self.features = nn.Sequential(*layers)                               # -> (1024, 2, 2)
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.outputs = nn.Linear(in_ch, num_classes)
 
     def forward(self, x):
-        raise NotImplementedError("TODO")
+        x = self.stem(x)
+        x = self.features(x)
+        x = self.gap(x)
+        x = torch.flatten(x, start_dim=1)                                    # (1024, 1, 1) -> 1024
+        x = self.outputs(x)
+        return x

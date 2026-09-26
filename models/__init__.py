@@ -24,5 +24,6 @@ MODELS = {
     "resnet18": partial(ResNet, (2, 2, 2, 2)),
     "resnet34": partial(ResNet, (3, 4, 6, 3)),
     "mobilenet": MobileNet,
+    "mobilenet_w05": partial(MobileNet, width=0.5),
     "convnext": ConvNeXt,
 }
