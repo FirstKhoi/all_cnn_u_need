@@ -4,7 +4,7 @@
     python visualize.py curves                  # test acc / train loss của mọi run
     python visualize.py compare                 # accuracy vs #params, bảng tổng kết
     python visualize.py filters  alexnet        # filter conv đầu tiên (đẹp nhất với kernel lớn: AlexNet/ZFNet)
-    python visualize.py features resnet18 --idx 7   # feature map qua các tầng conv
+    python visualize.py features resnet18 --idx 7   # feature map qua các tầng conv (8 channel kích hoạt mạnh nhất)
 
 `name` = tag của run (runs/<tag>.json). Chưa train → dùng weights random (so sánh random vs trained rất đáng xem).
 """
@@ -120,10 +120,10 @@ def features(a):
     axes[0][0].imshow(raw.permute(1, 2, 0).clamp(0, 1))
     for row, (n, _) in zip(axes, convs):
         fmap = acts[n]
+        top = fmap.mean((1, 2)).topk(min(8, len(fmap))).indices  # channels firing hardest on this image
         row[1].set_title(f"{n} {tuple(fmap.shape)}", fontsize=7, loc="left")
-        for j, ax in enumerate(row[1:]):
-            if j < fmap.shape[0]:
-                ax.imshow(fmap[j], cmap="viridis")
+        for ax, c in zip(row[1:], top.tolist()):
+            ax.imshow(fmap[c], cmap="viridis")
         for ax in row:
             ax.axis("off")
     fig.suptitle(f"{a.name}: true={CLASSES[label]} pred={CLASSES[pred]}")
