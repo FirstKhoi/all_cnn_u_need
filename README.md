@@ -9,6 +9,7 @@ data.py        CIFAR-10 loaders                      (viết sẵn)
 train.py       train + eval, lưu runs/<tag>.json|pt  (viết sẵn)
 visualize.py   summary / curves / compare / filters / features  (viết sẵn)
 check.py       kiểm tra shape + gradient mỗi model   (viết sẵn)
+app.py         CNN Explorer: xem ảnh đi qua từng layer (viết sẵn, logic ở probe.py)
 models/        ← PHẦN BẠN VIẾT. Mỗi file: docstring = bài học + kiến trúc + thí nghiệm
 ```
 
@@ -47,6 +48,15 @@ python visualize.py features lenet --idx 3
 Thí nghiệm biến thể (bỏ dropout, đổi activation...): sửa code tạm thời, rồi train với `--tag <tên>` để không đè lên run cũ.
 
 Mốc tham khảo trên CIFAR-10 (train từ đầu, khoảng 30 epoch, sai số vài %): LeNet ~65%, AlexNet-CIFAR ~80%, VGG16-BN ~92%, GoogLeNet ~93%, ResNet18 ~94%, MobileNet ~90%.
+
+## CNN Explorer: xem ảnh đi qua từng layer
+
+```bash
+python app.py        # mở http://localhost:8501. KHÔNG dùng `streamlit run app.py` (torch crash server, xem đầu app.py)
+python test_probe.py # tự kiểm tra probe.py trên mọi model + chạy thử app
+```
+
+Chọn model và ảnh (CIFAR-10 test hoặc upload), rồi xem 4 tab: hành trình qua từng layer, soi 1 layer, Grad-CAM, nhánh trong block (ResNet/Inception/MobileNet/ConvNeXt). Thanh bên trái: so sánh 2 model / trained vs random / gốc vs đã chỉnh, chỉnh ảnh đầu vào (sáng, nhiễu, xoay, che 1 vùng), tắt/bật thành phần (shortcut, nhánh Inception, bỏ qua block, tắt channel). Cần `runs/<tag>.pt`.
 
 ## Train trên Google Colab
 

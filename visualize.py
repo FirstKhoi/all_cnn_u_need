@@ -36,15 +36,15 @@ def load_runs():
     return [json.loads(p.read_text()) for p in sorted(RUNS.glob("*.json"))]
 
 
-def load_model(name):
-    """Return (model, img_size). Loads trained weights if runs/<name>.pt exists."""
+def load_model(name, trained=True):
+    """Return (model, img_size). Loads trained weights if runs/<name>.pt exists (and trained=True)."""
     meta = RUNS / f"{name}.json"
     run = json.loads(meta.read_text()) if meta.exists() else {"model": name, "args": {}}
     model = MODELS[run["model"]]()
     weights = RUNS / f"{name}.pt"
-    if weights.exists():
+    if trained and weights.exists():
         model.load_state_dict(torch.load(weights, map_location="cpu"))
-    else:
+    elif trained:
         print(f"no {weights}, using random init")
     return model.eval(), run["args"].get("img_size", 32)
 
